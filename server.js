@@ -4,9 +4,12 @@ const port = 3000;
 
 const menuRoutes = require('./routes/menuRoutes');
 
+app.use(express.json());
+
 app.get('/',(req,res) => {
   res.send('Smart Restaurant API is running');
 });
+
 
 app.use('/api/menu', menuRoutes);
 
