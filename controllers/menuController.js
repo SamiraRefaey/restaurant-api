@@ -27,13 +27,18 @@ let menuItems = [
 let nextId = 5;
 
 // GET /api/menu
+// Return every menu item.
 function getAllMenuItems(req, res) {
     res.json(menuItems);
 }
 
 // GET /api/menu/:id
+// Return one menu item by ID, or 404 if it does not exist.
 function getMenuItemById(req, res) {
     const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid menu item ID' });
+    }
     const menuItem = menuItems.find(item => item.id === id);
     if (!menuItem) {
         return res.status(404).json({ error: 'Menu item not found' });
@@ -42,22 +47,14 @@ function getMenuItemById(req, res) {
 }
 
 // POST /api/menu
+// Validate the submitted item, assign it a new ID, and return it with status 201.
 function createMenuItem(req, res) {
-    const body = req.body;
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-        return res.status(400).json({ error: 'Invalid request body' });
+    const validationError = validateMenuItem(req.body);
+    if (validationError) {
+        return res.status(400).json({ error: validationError });
     }
 
-    const { name, description, price } = body;
-    if (
-        typeof name !== 'string' ||
-        typeof description !== 'string' ||
-        typeof price !== 'number' ||
-        !Number.isFinite(price) ||
-        price <= 0
-    ) {
-        return res.status(400).json({ error: 'Invalid menu item data' });
-    }
+    const { name, description, price } = req.body;
 
     const newMenuItem = {
         id: nextId++,
@@ -69,8 +66,70 @@ function createMenuItem(req, res) {
     return res.status(201).json(newMenuItem);
 }
 
+// PUT /api/menu/:id
+// Replace all editable fields (name, description, and price) for an existing item.
+function updateMenuItem(req, res) {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid menu item ID' });
+    }
+
+    const menuItem = menuItems.find(item => item.id === id);
+    if (!menuItem) {
+        return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    const validationError = validateMenuItem(req.body);
+    if (validationError) {
+        return res.status(400).json({ error: validationError });
+    }
+
+    const { name, description, price } = req.body;
+    menuItem.name = name.trim();
+    menuItem.description = description.trim();
+    menuItem.price = price;
+    return res.json(menuItem);
+}
+
+// DELETE /api/menu/:id
+// Remove an existing item. A successful deletion returns 204 with no response body.
+function deleteMenuItem(req, res) {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid menu item ID' });
+    }
+
+    const menuItemIndex = menuItems.findIndex(item => item.id === id);
+    if (menuItemIndex === -1) {
+        return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    menuItems.splice(menuItemIndex, 1);
+    return res.status(204).send();
+}
+
+// Check that a request body contains a non-empty name and description and a positive price.
+// Return an error message when invalid, or null when valid.
+function validateMenuItem(body) {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        return 'Invalid request body';
+    }
+
+    const { name, description, price } = body;
+    if (
+        typeof name !== 'string' || name.trim().length === 0 ||
+        typeof description !== 'string' || description.trim().length === 0 ||
+        typeof price !== 'number' || !Number.isFinite(price) || price <= 0
+    ) {
+        return 'Invalid menu item data';
+    }
+    return null;
+}
+
 module.exports = {
     getAllMenuItems,
     getMenuItemById,
-    createMenuItem
+    createMenuItem,
+    updateMenuItem,
+    deleteMenuItem
 };
