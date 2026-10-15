@@ -25,6 +25,7 @@ All menu endpoints use the `/api/menu` path. For requests with a JSON body, send
 | `GET` | `/api/menu/:id` | Get one menu item by ID. |
 | `POST` | `/api/menu` | Create a menu item. |
 | `PUT` | `/api/menu/:id` | Replace an existing item's editable fields. |
+| `PATCH` | `/api/menu/:id` | Update selected fields on an existing item. |
 | `DELETE` | `/api/menu/:id` | Delete a menu item. |
 
 ### Create or update a menu item
@@ -54,6 +55,19 @@ Content-Type: application/json
 ```
 
 `PUT` replaces the item's `name`, `description`, and `price`; include all fields in the request body.
+
+`PATCH` updates only the fields included in the request body. Include at least one of `name`, `description`, or `price`; each supplied field must be valid. For example, to change only the price:
+
+```http
+PATCH /api/menu/1
+Content-Type: application/json
+```
+
+```json
+{
+  "price": 275
+}
+```
 
 ## Responses
 
