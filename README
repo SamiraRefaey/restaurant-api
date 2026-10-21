@@ -21,7 +21,7 @@ All menu endpoints use the `/api/menu` path. For requests with a JSON body, send
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| `GET` | `/api/menu` | Get all menu items. |
+| `GET` | `/api/menu` | Filter, search, and paginate menu items. |
 | `GET` | `/api/menu/:id` | Get one menu item by ID. |
 | `POST` | `/api/menu` | Create a menu item. |
 | `PUT` | `/api/menu/:id` | Replace an existing item's editable fields. |
@@ -30,11 +30,12 @@ All menu endpoints use the `/api/menu` path. For requests with a JSON body, send
 
 ### Create or update a menu item
 
-`POST` and `PUT` expect all three fields below. `name` and `description` must be non-empty strings, and `price` must be a positive number.
+`POST` and `PUT` expect `name`, `category`, `description`, and `price`. Text fields must be non-empty strings, and `price` must be a positive number.
 
 ```json
 {
   "name": "BBQ Chicken Pizza",
+  "category": "Pizza",
   "description": "Pizza",
   "price": 250
 }
@@ -54,9 +55,9 @@ PUT /api/menu/1
 Content-Type: application/json
 ```
 
-`PUT` replaces the item's `name`, `description`, and `price`; include all fields in the request body.
+`PUT` replaces the item's `name`, `category`, `description`, and `price`; include all fields in the request body.
 
-`PATCH` updates only the fields included in the request body. Include at least one of `name`, `description`, or `price`; each supplied field must be valid. For example, to change only the price:
+`PATCH` updates only the fields included in the request body. Include at least one of `name`, `category`, `description`, or `price`; each supplied field must be valid. For example, to change only the price:
 
 ```http
 PATCH /api/menu/1
@@ -68,6 +69,19 @@ Content-Type: application/json
   "price": 275
 }
 ```
+
+### List menu items
+
+`GET /api/menu` supports these query parameters:
+
+- `category`: exact category match, case-insensitive (for example, `?category=Pizza`).
+- `search`: case-insensitive substring search in the item name and description.
+- `page`: positive integer page number; defaults to `1`.
+- `limit`: positive integer page size; defaults to `10`.
+
+Filters are applied before pagination. The response contains the matching items in `data` and `page`, `limit`, `total`, and `totalPages` in `pagination`. Invalid `page` or `limit` values return `400 Bad Request`.
+
+Example: `GET /api/menu?category=Pizza&search=cheese&page=1&limit=5`
 
 ## Responses
 
