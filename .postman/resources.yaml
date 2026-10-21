@@ -2,6 +2,12 @@
 workspace:
   id: 0e5e367f-8165-44dd-810a-2cb9279d0b45
 
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../postman/collections/Restaurant Menu API: 73aa3224-f35d-4abe-940c-84bc829e0f41
+
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:
 #localResources:
