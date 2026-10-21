@@ -30,6 +30,7 @@ let menuItems = [
 ];
 let nextId = 5;
 
+// Test in Postman: GET http://localhost:3000/api/menu?category=Pizza&search=cheese&page=1&limit=5
 // GET /api/menu
 // Filter, search, and paginate menu items.
 function getAllMenuItems(req, res) {
@@ -73,6 +74,7 @@ function getAllMenuItems(req, res) {
     });
 }
 
+// Test in Postman: GET http://localhost:3000/api/menu/1
 // GET /api/menu/:id
 // Return one menu item by ID, or 404 if it does not exist.
 function getMenuItemById(req, res) {
@@ -87,6 +89,8 @@ function getMenuItemById(req, res) {
     return res.json(menuItem);
 }
 
+// Test in Postman: POST http://localhost:3000/api/menu (Body > raw > JSON):
+// { "name": "BBQ Chicken Pizza", "category": "Pizza", "description": "Chicken and cheese", "price": 250 }
 // POST /api/menu
 // Validate the submitted item, assign it a new ID, and return it with status 201.
 function createMenuItem(req, res) {
@@ -108,6 +112,7 @@ function createMenuItem(req, res) {
     return res.status(201).json(newMenuItem);
 }
 
+// Test in Postman: PUT http://localhost:3000/api/menu/1 (send all editable fields as JSON).
 // PUT /api/menu/:id
 // Replace all editable fields for an existing item.
 function updateMenuItem(req, res) {
@@ -134,6 +139,8 @@ function updateMenuItem(req, res) {
     return res.json(menuItem);
 }
 
+// Test in Postman: PATCH http://localhost:3000/api/menu/1 (Body > raw > JSON):
+// { "price": 275 }
 // PATCH /api/menu/:id
 // Update only the editable fields provided in the request body.
 function patchMenuItem(req, res) {
@@ -179,6 +186,7 @@ function patchMenuItem(req, res) {
     return res.json(menuItem);
 }
 
+// Test in Postman: DELETE http://localhost:3000/api/menu/1 (no request body).
 // DELETE /api/menu/:id
 // Remove an existing item. A successful deletion returns 204 with no response body.
 function deleteMenuItem(req, res) {
