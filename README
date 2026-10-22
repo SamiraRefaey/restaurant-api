@@ -1,45 +1,44 @@
-# Restaurant API
+# Smart Restaurant API
 
-A simple REST API for managing restaurant menu items, built with Node.js and Express.
+A small REST API for managing an in-memory restaurant menu. It uses Node.js and Express.
 
 ## Requirements
 
-- Node.js and npm
+- Node.js
+- npm
 
-## Run the server
+## Run locally
 
 ```bash
 npm install
 npm start
 ```
 
-The server listens at `http://localhost:3000`.
+The server listens at `http://localhost:3000`. Visit `/` to confirm it is running.
 
-## Menu API
+## Menu endpoints
 
-All menu endpoints use the `/api/menu` path. For requests with a JSON body, send the `Content-Type: application/json` header.
+All menu routes are under `/api/menu`.
 
-| Method | Endpoint | Description |
+| Method | Path | Purpose | Success response |
+| --- | --- | --- | --- |
+| `GET` | `/api/menu` | List, search, filter, and paginate items | `200 OK` |
+| `GET` | `/api/menu/:id` | Get one item | `200 OK` |
+| `POST` | `/api/menu` | Create an item | `201 Created` |
+| `PUT` | `/api/menu/:id` | Replace an item's fields | `200 OK` |
+| `PATCH` | `/api/menu/:id` | Update selected fields | `200 OK` |
+| `DELETE` | `/api/menu/:id` | Delete an item | `204 No Content` |
+
+### Menu item fields
+
+Create and replace requests require all four fields:
+
+| Field | Type | Rules |
 | --- | --- | --- |
-| `GET` | `/api/menu` | Filter, search, and paginate menu items. |
-| `GET` | `/api/menu/:id` | Get one menu item by ID. |
-| `POST` | `/api/menu` | Create a menu item. |
-| `PUT` | `/api/menu/:id` | Replace an existing item's editable fields. |
-| `PATCH` | `/api/menu/:id` | Update selected fields on an existing item. |
-| `DELETE` | `/api/menu/:id` | Delete a menu item. |
-
-### Create or update a menu item
-
-`POST` and `PUT` expect `name`, `category`, `description`, and `price`. Text fields must be non-empty strings, and `price` must be a positive number.
-
-```json
-{
-  "name": "BBQ Chicken Pizza",
-  "category": "Pizza",
-  "description": "Pizza",
-  "price": 250
-}
-```
+| `name` | string | Must not be empty or whitespace only |
+| `category` | string | Must not be empty or whitespace only |
+| `price` | number | Must be greater than zero |
+| `available` | boolean | Required |
 
 Example create request:
 
@@ -48,16 +47,16 @@ POST /api/menu
 Content-Type: application/json
 ```
 
-Example update request:
-
-```http
-PUT /api/menu/1
-Content-Type: application/json
+```json
+{
+  "name": "BBQ Chicken Pizza",
+  "category": "Pizza",
+  "price": 250,
+  "available": true
+}
 ```
 
-`PUT` replaces the item's `name`, `category`, `description`, and `price`; include all fields in the request body.
-
-`PATCH` updates only the fields included in the request body. Include at least one of `name`, `category`, `description`, or `price`; each supplied field must be valid. For example, to change only the price:
+`PUT` replaces the item's fields, so send all four fields. `PATCH` accepts one or more of those fields and keeps the rest unchanged. For example:
 
 ```http
 PATCH /api/menu/1
@@ -70,25 +69,53 @@ Content-Type: application/json
 }
 ```
 
-### List menu items
+Names and categories are trimmed before they are stored. Unknown fields are rejected.
 
-`GET /api/menu` supports these query parameters:
+### List, filter, and search
 
-- `category`: exact category match, case-insensitive (for example, `?category=Pizza`).
-- `search`: case-insensitive substring search in the item name and description.
-- `page`: positive integer page number; defaults to `1`.
-- `limit`: positive integer page size; defaults to `10`.
+`GET /api/menu` accepts these query parameters:
 
-Filters are applied before pagination. The response contains the matching items in `data` and `page`, `limit`, `total`, and `totalPages` in `pagination`. Invalid `page` or `limit` values return `400 Bad Request`.
+| Parameter | Behavior | Default |
+| --- | --- | --- |
+| `category` | Exact category match, case-insensitive | All categories |
+| `search` | Case-insensitive substring match in the item name | No search filter |
+| `page` | Positive integer page number | `1` |
+| `limit` | Positive integer page size | `10` |
 
-Example: `GET /api/menu?category=Pizza&search=cheese&page=1&limit=5`
+Filters are applied before pagination. For example:
 
-## Responses
+```http
+GET /api/menu?category=Pizza&search=cheese&page=1&limit=5
+```
 
-- Create returns `201 Created` and the new menu item.
-- Successful reads and updates return `200 OK` and JSON.
-- Delete returns `204 No Content` with an empty response body.
-- Invalid request data or IDs return `400 Bad Request`.
-- A valid ID that does not match a menu item returns `404 Not Found`.
+The list response contains a `data` array and pagination metadata:
 
-Menu items are currently stored in memory, so changes are reset when the server restarts.
+```json
+{
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 5,
+    "total": 0,
+    "totalPages": 0
+  }
+}
+```
+
+### Errors
+
+- `400 Bad Request` — invalid item data, ID, or query parameter.
+- `404 Not Found` — a valid ID does not match a menu item.
+- `204 No Content` — item deleted successfully; response body is empty.
+
+Error responses use this shape:
+
+```json
+{
+  "message": "Menu item not found"
+}
+```
+
+## Data storage
+
+Menu items are stored in memory. Creating, updating, and deleting items changes the running server's data; restarting the server restores the initial menu.
