@@ -10,8 +10,10 @@ function sendError(res, result) {
 }
 
 // GET /api/menu
-function getAllMenuItems(req, res) {
-    const result = menuService.getAllMenuItems(req.query);
+// Previously handlers called synchronous service functions; database-backed
+// service calls return Promises, so handlers are async and await each result.
+async function getAllMenuItems(req, res) {
+    const result = await menuService.getAllMenuItems(req.query);
 
     if (result.error) {
         return sendError(res, result);
@@ -23,8 +25,9 @@ function getAllMenuItems(req, res) {
 }
 
 // GET /api/menu/:id
-function getMenuItemById(req, res) {
-    const result = menuService.getMenuItemById(req.params.id);
+// Previously this lookup returned immediately from memory; await the DB query.
+async function getMenuItemById(req, res) {
+    const result = await menuService.getMenuItemById(req.params.id);
 
     if (result.error) {
         return sendError(res, result);
@@ -34,8 +37,9 @@ function getMenuItemById(req, res) {
 }
 
 // POST /api/menu
-function createMenuItem(req, res) {
-    const result = menuService.createMenuItem(req.body);
+// Previously createMenuItem returned synchronously; PostgreSQL INSERT is async.
+async function createMenuItem(req, res) {
+    const result = await menuService.createMenuItem(req.body);
 
     if (result.error) {
         return sendError(res, result);
@@ -47,8 +51,9 @@ function createMenuItem(req, res) {
 }
 
 // PUT /api/menu/:id
-function replaceMenuItem(req, res) {
-    const result = menuService.replaceMenuItem(
+// Previously replacement updated an array immediately; await the DB UPDATE.
+async function replaceMenuItem(req, res) {
+    const result = await menuService.replaceMenuItem(
         req.params.id,
         req.body
     );
@@ -61,8 +66,9 @@ function replaceMenuItem(req, res) {
 }
 
 // PATCH /api/menu/:id
-function updateMenuItem(req, res) {
-    const result = menuService.updateMenuItem(
+// Previously patching used synchronous in-memory reads and updates; await both.
+async function updateMenuItem(req, res) {
+    const result = await menuService.updateMenuItem(
         req.params.id,
         req.body
     );
@@ -75,8 +81,9 @@ function updateMenuItem(req, res) {
 }
 
 // DELETE /api/menu/:id
-function deleteMenuItem(req, res) {
-    const result = menuService.deleteMenuItem(req.params.id);
+// Previously deletion spliced the in-memory array; await the persistent DELETE.
+async function deleteMenuItem(req, res) {
+    const result = await menuService.deleteMenuItem(req.params.id);
 
     if (result.error) {
         return sendError(res, result);

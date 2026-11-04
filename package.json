@@ -1,12 +1,13 @@
 {
   "dependencies": {
-    "express": "^5.2.1"
+    "dotenv": "^18.0.9",
+    "express": "^5.2.1",
+    "pg": "^8.23.1"
   },
   "name": "restaurant-api",
   "version": "1.0.0",
   "description": "This is a basic API Project using NodeJs Express and Postman",
   "main": "server.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"

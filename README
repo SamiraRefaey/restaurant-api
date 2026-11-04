@@ -1,13 +1,24 @@
 # Smart Restaurant API
 
-A small REST API for managing an in-memory restaurant menu. It uses Node.js and Express.
+A small REST API for managing a restaurant menu stored in PostgreSQL. It uses Node.js and Express.
 
 ## Requirements
 
 - Node.js
 - npm
+- PostgreSQL
 
-## Run locally
+## Configure and run locally
+
+Copy `.env.example` to `.env` and set `DATABASE_URL` to your PostgreSQL connection string. For example:
+
+```text
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/food_ordering_db
+PGSSL=false
+PORT=3000
+```
+
+The database, user, and schema must already exist. On startup, the API checks its PostgreSQL connection but does not create or alter tables. It uses the supplied `menu_items` schema (`item_id`, `restaurant_id`, `category_id`, `base_price`, and `is_available`).
 
 ```bash
 npm install
@@ -27,18 +38,21 @@ All menu routes are under `/api/menu`.
 | `POST` | `/api/menu` | Create an item | `201 Created` |
 | `PUT` | `/api/menu/:id` | Replace an item's fields | `200 OK` |
 | `PATCH` | `/api/menu/:id` | Update selected fields | `200 OK` |
-| `DELETE` | `/api/menu/:id` | Delete an item | `204 No Content` |
+| `DELETE` | `/api/menu/:id` | Mark an item unavailable | `204 No Content` |
 
 ### Menu item fields
 
-Create and replace requests require all four fields:
+Create and replace requests require these schema fields:
 
 | Field | Type | Rules |
 | --- | --- | --- |
+| `restaurant_id` | integer | Positive restaurant ID |
+| `category_id` | integer or `null` | Optional category belonging to that restaurant |
 | `name` | string | Must not be empty or whitespace only |
-| `category` | string | Must not be empty or whitespace only |
-| `price` | number | Must be greater than zero |
-| `available` | boolean | Required |
+| `base_price` | number | Must be nonnegative |
+| `is_available` | boolean | Required |
+
+`description` and `image_url` are optional and may be `null`.
 
 Example create request:
 
@@ -49,14 +63,17 @@ Content-Type: application/json
 
 ```json
 {
+  "restaurant_id": 1,
+  "category_id": 2,
   "name": "BBQ Chicken Pizza",
-  "category": "Pizza",
-  "price": 250,
-  "available": true
+  "description": "Smoky chicken and barbecue sauce",
+  "base_price": 250,
+  "image_url": null,
+  "is_available": true
 }
 ```
 
-`PUT` replaces the item's fields, so send all four fields. `PATCH` accepts one or more of those fields and keeps the rest unchanged. For example:
+`PUT` replaces the item's fields, so send the required fields. `PATCH` accepts one or more schema fields and keeps the rest unchanged. For example:
 
 ```http
 PATCH /api/menu/1
@@ -65,11 +82,11 @@ Content-Type: application/json
 
 ```json
 {
-  "price": 275
+  "base_price": 275
 }
 ```
 
-Names and categories are trimmed before they are stored. Unknown fields are rejected.
+Names are trimmed before storage. Unknown fields are rejected. `DELETE` marks an item unavailable instead of removing a row, preserving menu history and references.
 
 ### List, filter, and search
 
@@ -77,15 +94,16 @@ Names and categories are trimmed before they are stored. Unknown fields are reje
 
 | Parameter | Behavior | Default |
 | --- | --- | --- |
-| `category` | Exact category match, case-insensitive | All categories |
-| `search` | Case-insensitive substring match in the item name | No search filter |
+| `restaurant_id` | Filter by restaurant | All restaurants |
+| `category_id` | Filter by category ID | All categories |
+| `search` | Case-insensitive substring match in item name or description | No search filter |
 | `page` | Positive integer page number | `1` |
 | `limit` | Positive integer page size | `10` |
 
 Filters are applied before pagination. For example:
 
 ```http
-GET /api/menu?category=Pizza&search=cheese&page=1&limit=5
+GET /api/menu?restaurant_id=1&category_id=2&search=cheese&page=1&limit=5
 ```
 
 The list response contains a `data` array and pagination metadata:
@@ -118,4 +136,6 @@ Error responses use this shape:
 
 ## Data storage
 
-Menu items are stored in memory. Creating, updating, and deleting items changes the running server's data; restarting the server restores the initial menu.
+All menu reads and writes use PostgreSQL. Records persist across server restarts and are shared by API instances connected to the same database. The connection can also be configured with `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` instead of `DATABASE_URL`. Set `PGSSL=true` when your provider requires TLS.
+
+The dependency list now includes `pg` (the PostgreSQL client) and `dotenv` (to load local `.env` settings). The previous project only depended on Express because it stored menu data in memory and had no database configuration.
