@@ -1,5 +1,6 @@
 const menuModel = require('../models/menuModel');
 const menuRepository = require('../repositories/menuRepository');
+const MenuSearchStrategyFactory = require('../factories/MenuSearchStrategyFactory');
 
 function failure(status, error) {
     return { status, error };
@@ -18,11 +19,15 @@ async function getAllMenuItems(query = {}) {
         (query.search !== undefined && typeof query.search !== 'string')) {
         return failure(400, 'Category ID, restaurant ID, and search must be valid single values');
     }
+    if (query.search_by !== undefined && !MenuSearchStrategyFactory.supports(query.search_by)) {
+        return failure(400, 'search_by must be all, name, or description');
+    }
 
     const result = await menuRepository.getMenuItems({
         categoryId: query.category_id === undefined ? undefined : Number(query.category_id),
         restaurantId: query.restaurant_id === undefined ? undefined : Number(query.restaurant_id),
         search: query.search?.trim().toLowerCase(),
+        searchStrategy: MenuSearchStrategyFactory.create(query.search_by),
         limit,
         offset: (page - 1) * limit
     });

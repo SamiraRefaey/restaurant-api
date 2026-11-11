@@ -1,0 +1,68 @@
+flowchart TD
+    client["Client request<br/>GET /api/menu<br/>search=pizza, search_by=name"]
+
+    subgraph HTTP["1. HTTP layer"]
+        route["Menu route<br/>GET /"]
+        controller["Menu controller<br/>passes req.query to service"]
+    end
+
+    subgraph SERVICE["2. MenuService: validate and coordinate"]
+        normalize["Validate filters and paging<br/>Normalize search text to lowercase"]
+        choice{"search_by supported?"}
+        reject["Return 400<br/>all, name, or description"]
+    end
+
+    subgraph FACTORY["3. Factory: choose and create one behavior"]
+        factory["MenuSearchStrategyFactory.create(search_by)<br/>defaults to all"]
+        selection{"Which strategy key?"}
+    end
+
+    subgraph STRATEGIES["4. Strategy: same operation, different behavior"]
+           all["CombinedSearchStrategy<br/>buildCondition(n)<br/>LOWER(name) OR LOWER(description)"]
+           name["NameSearchStrategy<br/>buildCondition(n)<br/>LOWER(name)"]
+           description["DescriptionSearchStrategy<br/>buildCondition(n)<br/>LOWER(description)"]
+    end
+
+    selected["Service passes selected strategy<br/>and normalized search to repository"]
+
+    subgraph REPOSITORY["5. MenuRepository: build and run the query"]
+        hasSearch{"Search text present?"}
+        invoke["Call the selected object's<br/>buildCondition(parameterIndex)"]
+        condition["Generated condition uses a<br/>fixed SQL column expression"]
+        bind["Bind search value as parameter<br/>%pizza% goes in values[]"]
+        where["Add strategy condition to WHERE<br/>alongside category / restaurant filters"]
+        queries["Run parameterized COUNT and SELECT<br/>then apply LIMIT and OFFSET"]
+    end
+
+    postgres[("PostgreSQL menu_items")]
+    response["Return rows and pagination"]
+    extension["To add another search mode:<br/>1. Implement buildCondition(index)<br/>2. Register it in the Factory<br/>3. Allow its name in service validation"]
+
+    client --> route --> controller --> normalize --> choice
+    choice -->|No| reject
+    choice -->|Yes| factory --> selection
+    selection -->|all or omitted| all
+    selection -->|name| name
+    selection -->|description| description
+    all --> selected
+    name --> selected
+    description --> selected
+    selected --> hasSearch
+    hasSearch -->|No| where
+    hasSearch -->|Yes| invoke
+    invoke --> condition --> bind --> where --> queries --> postgres --> response
+    all -. "extension point" .-> extension
+
+    classDef http fill:#e8f1fb,stroke:#376996,color:#172b3b,stroke-width:1.5px
+    classDef service fill:#fff3d6,stroke:#a87412,color:#3d2c0a,stroke-width:1.5px
+    classDef factory fill:#e9e4f7,stroke:#65539a,color:#241a3f,stroke-width:2px
+    classDef strategy fill:#e4f4e8,stroke:#3d8553,color:#183820,stroke-width:1.5px
+    classDef persistence fill:#fce8e6,stroke:#bd5147,color:#4a1f1b,stroke-width:1.5px
+    classDef note fill:#f1f3f5,stroke:#68737d,color:#26313a,stroke-dasharray:4 3
+
+    class client,route,controller http
+    class normalize,choice,reject,hasSearch service
+    class factory,selection factory
+    class all,name,description strategy
+    class bind,where,queries,postgres,response persistence
+    class extension note

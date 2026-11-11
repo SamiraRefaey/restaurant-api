@@ -12,7 +12,7 @@ function mapRow(row) {
 
 // Previously queries used id/category/price/available from the demo array and
 // the locally invented table. Use the supplied schema's column names instead.
-async function getMenuItems({ categoryId, restaurantId, search, limit, offset }) {
+async function getMenuItems({ categoryId, restaurantId, search, searchStrategy, limit, offset }) {
     const conditions = [];
     const values = [];
     if (categoryId !== undefined) {
@@ -25,7 +25,7 @@ async function getMenuItems({ categoryId, restaurantId, search, limit, offset })
     }
     if (search) {
         values.push(`%${search}%`);
-        conditions.push(`(LOWER(name) LIKE $${values.length} OR LOWER(COALESCE(description, '')) LIKE $${values.length})`);
+        conditions.push(searchStrategy.buildCondition(values.length));
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const count = await pool.query(`SELECT COUNT(*) FROM menu_items ${where}`, values);

@@ -97,13 +97,14 @@ Names are trimmed before storage. Unknown fields are rejected. `DELETE` marks an
 | `restaurant_id` | Filter by restaurant | All restaurants |
 | `category_id` | Filter by category ID | All categories |
 | `search` | Case-insensitive substring match in item name or description | No search filter |
+| `search_by` | Choose which text field `search` checks: `all`, `name`, or `description` | `all` |
 | `page` | Positive integer page number | `1` |
 | `limit` | Positive integer page size | `10` |
 
-Filters are applied before pagination. For example:
+Filters are applied before pagination. `search_by` is only used when `search` is provided. For example:
 
 ```http
-GET /api/menu?restaurant_id=1&category_id=2&search=cheese&page=1&limit=5
+GET /api/menu?restaurant_id=1&category_id=2&search=cheese&search_by=name&page=1&limit=5
 ```
 
 The list response contains a `data` array and pagination metadata:
