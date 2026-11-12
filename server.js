@@ -5,6 +5,8 @@ const app = express();
 const port = Number(process.env.PORT || 3000);
 
 const menuRoutes = require('./routes/menuRoutes');
+const notFound = require('./middleware/notFound');
+const errorHandler = require('./middleware/errorHandler');
 
 app.use(express.json());
 
@@ -14,6 +16,10 @@ app.get('/',(req,res) => {
 
 
 app.use('/api/menu', menuRoutes);
+
+// Keep the error handler after routes so thrown/rejected errors reach it.
+app.use(notFound);
+app.use(errorHandler);
 
 // Previously app.listen() started without checking PostgreSQL. The provided
 // database already owns its schema, so verify connectivity without creating tables.
