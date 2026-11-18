@@ -5,6 +5,8 @@ const app = express();
 const port = Number(process.env.PORT || 3000);
 
 const menuRoutes = require('./routes/menuRoutes');
+const authRoutes = require('./routes/authRoutes');
+const authenticate = require('./middleware/authenticate');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -15,7 +17,10 @@ app.get('/',(req,res) => {
 });
 
 
-app.use('/api/menu', menuRoutes);
+// Registration and login are public so clients can obtain an access token.
+app.use('/api/auth', authRoutes);
+// Every menu operation requires a valid token before reaching its route handler.
+app.use('/api/menu', authenticate, menuRoutes);
 
 // Keep the error handler after routes so thrown/rejected errors reach it.
 app.use(notFound);
